@@ -316,6 +316,61 @@ public class Wikibase extends Wiki {
     }
 
     /**
+     * Edits the specified claim by replacing it with the new one
+     * 
+     * @param entityId
+     * @param claim
+     * @return the guid of the created claim
+     * @throws WikibaseException
+     * @throws IOException
+     */
+    public String editClaim(Claim claim) throws WikibaseException, IOException {
+        String edittoken = obtainToken();
+
+        final StringBuilder url = new StringBuilder(query);
+        url.append("action=wbsetclaim");
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&claim=").append(URLEncoder.encode(claim.toJSON(), "UTF-8"));
+        postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "editClaim");
+
+        DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
+        String ret = null;
+        try {
+            DocumentBuilder builder = domBuilderFactory.newDocumentBuilder();
+            Document document = builder.parse(new ByteArrayInputStream(text1.getBytes()));
+            XPathFactory xpathFactory = XPathFactory.newInstance();
+            XPath xPath = xpathFactory.newXPath();
+            XPathExpression apiExpression = xPath.compile("/api[1]");
+            Node apiNode = (Node) apiExpression.evaluate(document, XPathConstants.NODE);
+            if (null == apiNode || null == apiNode.getAttributes()
+                || null == apiNode.getAttributes().getNamedItem("success")) {
+                throw new WikibaseException("API root node with success parameter not found in text.");
+            }
+            if ("1".equals(apiNode.getAttributes().getNamedItem("success").getNodeValue())) {
+                XPathExpression claimExpression = xPath.compile(
+                    "/api[1]/claim[1]");
+                Node claimNode = (Node) claimExpression.evaluate(document, XPathConstants.NODE);
+                if (null == claimNode || null == claimNode.getAttributes()
+                    || null == claimNode.getAttributes().getNamedItem("id")) {
+                    throw new WikibaseException("Claim node not present or without id attribute");
+                }
+                ret = claimNode.getAttributes().getNamedItem("id").getNodeValue();
+            } else {
+                XPathExpression errorExpression = xPath.compile("/api[1]/error[1]");
+                Node errorNode = (Node) errorExpression.evaluate(document, XPathConstants.NODE);
+                if (null != errorNode && null != errorNode.getAttributes() && null != errorNode.getAttributes().getNamedItem("info")) {
+                    throw new WikibaseException(errorNode.getAttributes().getNamedItem("info").getNodeValue());
+                }
+            }
+        } catch (Exception e) {
+            log(Level.WARNING, "editClaim", e.getMessage());
+            return null;
+        }
+        return ret;
+    }
+    /**
      * Removes the claim with the specified id from the entity with the specified ID
      * 
      * @param claimId

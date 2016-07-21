@@ -89,6 +89,27 @@ public class WikibaseClaimFactory {
                     claim.addReference(reference);
                     crtReference = crtReference.getNextSibling();
                 }
+            } else if ("qualifiers".equalsIgnoreCase(claimChild.getNodeName())) {
+                Node crtProperty = claimChild.getFirstChild();
+                if ("property".equals(crtProperty.getNodeName())) {
+                    while (null != crtProperty) {
+                        if (!"property".equalsIgnoreCase(crtProperty.getNodeName())) {
+                            crtProperty = crtProperty.getNextSibling();
+                            continue;
+                        }
+                        Node crtQualifier = crtProperty.getFirstChild();
+
+                        String propCode = crtProperty.getAttributes().getNamedItem("id").getNodeValue();
+                        Property prop = WikibasePropertyFactory.getWikibaseProperty(propCode);
+                        if ("qualifiers".equalsIgnoreCase(crtQualifier.getNodeName())) {
+                            Snak dataSnak = parseSnakFromNode(crtQualifier);
+                            if (null != dataSnak) {
+                                claim.addQualifier(prop, dataSnak.getData());
+                            }
+                        }
+                        crtProperty = crtProperty.getNextSibling();
+                    }
+                }
             }
 
             claimChild = claimChild.getNextSibling();
@@ -100,9 +121,9 @@ public class WikibaseClaimFactory {
     private static Snak parseSnakFromNode(Node snakNode) throws WikibaseException {
         String datatype = snakNode.getAttributes().getNamedItem("datatype").getNodeValue();
         Property prop = new Property(snakNode.getAttributes().getNamedItem("property").getNodeValue());
-        Snak mainsnak = new Snak();
-        mainsnak.setProperty(prop);
-        mainsnak.setDatatype(datatype);
+        Snak snak = new Snak();
+        snak.setProperty(prop);
+        snak.setDatatype(datatype);
         if ("wikibase-item".equalsIgnoreCase(datatype)) {
             Node datavalueNode = snakNode.getFirstChild();
             while (null != datavalueNode) {
@@ -116,7 +137,7 @@ public class WikibaseClaimFactory {
                                     valueNode.getAttributes().getNamedItem("entity-type").getNodeValue())) {
                                     String itemId = valueNode.getAttributes().getNamedItem("numeric-id").getNodeValue();
                                     Entity ent = new Entity(itemId);
-                                    mainsnak.setData(new Item(ent));
+                                    snak.setData(new Item(ent));
                                 }
                             }
                             valueNode = valueNode.getNextSibling();
@@ -130,7 +151,7 @@ public class WikibaseClaimFactory {
             Node datavalueNode = snakNode.getFirstChild();
             while (null != datavalueNode) {
                 if ("datavalue".equalsIgnoreCase(datavalueNode.getNodeName())) {
-                    mainsnak.setData(new CommonsMedia(datavalueNode.getAttributes().getNamedItem("value").getNodeValue()));
+                    snak.setData(new CommonsMedia(datavalueNode.getAttributes().getNamedItem("value").getNodeValue()));
                 }
                 datavalueNode = datavalueNode.getNextSibling();
             }
@@ -138,7 +159,7 @@ public class WikibaseClaimFactory {
             Node datavalueNode = snakNode.getFirstChild();
             while (null != datavalueNode) {
                 if ("datavalue".equalsIgnoreCase(datavalueNode.getNodeName())) {
-                    mainsnak.setData(new StringData(datavalueNode.getAttributes().getNamedItem("value").getNodeValue()));
+                    snak.setData(new StringData(datavalueNode.getAttributes().getNamedItem("value").getNodeValue()));
                 }
                 datavalueNode = datavalueNode.getNextSibling();
             }
@@ -148,7 +169,7 @@ public class WikibaseClaimFactory {
                 if ("datavalue".equalsIgnoreCase(datavalueNode.getNodeName())) {
                     try {
                         String urlValue = datavalueNode.getAttributes().getNamedItem("value").getNodeValue();
-                        mainsnak.setData(new URLData(new URL(urlValue)));
+                        snak.setData(new URLData(new URL(urlValue)));
                     } catch (Exception e) {
                         throw new WikibaseException(e);
                     }
@@ -165,7 +186,7 @@ public class WikibaseClaimFactory {
                             try {
                                 String language = valueNode.getAttributes().getNamedItem("language").getNodeValue();
                                 String text = valueNode.getAttributes().getNamedItem("text").getNodeValue();
-                                mainsnak.setData(new LanguageString(language, text));
+                                snak.setData(new LanguageString(language, text));
                             } catch (Exception e) {
                                 throw new WikibaseException(e);
                             }
@@ -212,7 +233,7 @@ public class WikibaseClaimFactory {
                                     time.setCalendarModel(new URL(calendarModel));
                                 } catch (Exception e) {
                                 }
-                                mainsnak.setData(time);
+                                snak.setData(time);
                             }
                             valueNode = valueNode.getNextSibling();
                         }
@@ -242,7 +263,7 @@ public class WikibaseClaimFactory {
                                 String globeItem = globeUrl.substring("http://www.wikidata.org/entity/".length());
                                 coords.setGlobe(new Item(new Entity(globeItem)));
                             }
-                            mainsnak.setData(coords);
+                            snak.setData(coords);
                         }
                         valueNode = valueNode.getNextSibling();
                     }
@@ -267,7 +288,7 @@ public class WikibaseClaimFactory {
                             String unitItem = unitUrl.substring("http://www.wikidata.org/entity/".length());
                             qty.setUnit(new Item(new Entity(unitItem)));
                         }
-                        mainsnak.setData(qty);
+                        snak.setData(qty);
                     }
                     valueNode = valueNode.getNextSibling();
                 }
@@ -280,7 +301,7 @@ public class WikibaseClaimFactory {
                 Node valueNode = datavalueNode.getFirstChild();
                 while (null != valueNode) {
                     if ("value".equalsIgnoreCase(valueNode.getNodeName())) {
-                        mainsnak.setData(
+                        snak.setData(
                             new Property("P" + valueNode.getAttributes().getNamedItem("numeric-id").getNodeValue()));
                     }
                     valueNode = valueNode.getNextSibling();
@@ -288,6 +309,6 @@ public class WikibaseClaimFactory {
             }
             datavalueNode = datavalueNode.getNextSibling();
         }
-        return mainsnak;
+        return snak;
     }
 }

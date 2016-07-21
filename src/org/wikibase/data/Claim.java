@@ -41,7 +41,6 @@ public class Claim {
     private Map<Property, Set<Snak>> qualifiers = new HashMap<Property, Set<Snak>>();
     private List<Set<Snak>> references = new ArrayList<Set<Snak>>();
 
-
     public Claim() {
         super();
         // TODO Auto-generated constructor stub
@@ -54,7 +53,7 @@ public class Claim {
     }
 
     public WikibaseData getValue() {
-        return null != mainsnak? mainsnak.getData() : null;
+        return null != mainsnak ? mainsnak.getData() : null;
     }
 
     public void setValue(WikibaseData value) {
@@ -125,7 +124,7 @@ public class Claim {
     public List<Set<Snak>> getReferences() {
         return Collections.unmodifiableList(references);
     }
-    
+
     public Property getProperty() {
         return property;
     }
@@ -133,6 +132,7 @@ public class Claim {
     public void setProperty(Property property) {
         this.property = property;
     }
+
     public Map<Property, Set<Snak>> getQualifiers() {
         return Collections.unmodifiableMap(qualifiers);
     }
@@ -145,7 +145,7 @@ public class Claim {
         dataset.add(new Snak(data, property));
         qualifiers.put(property, dataset);
     }
-    
+
     public void addReference(Set<Snak> ref) {
         references.add(ref);
     }
@@ -157,16 +157,23 @@ public class Claim {
 
     public String toJSON() {
         StringBuilder sbuild = new StringBuilder("{");
+        if (null != id && 0 < id.trim().length()) {
+            sbuild.append("\"id\":\"").append(id).append("\",");
+        }
         sbuild.append("\"mainsnak\":");
-
 
         sbuild.append(mainsnak.toJSON());
         if (!qualifiers.isEmpty()) {
             sbuild.append(',');
             sbuild.append("\"qualifiers\": {");
+            boolean first = true;
             for (Entry<Property, Set<Snak>> qualEntry : qualifiers.entrySet()) {
                 String propId = qualEntry.getKey().getId().startsWith("P") ? qualEntry.getKey().getId()
                     : ("P" + qualEntry.getKey().getId());
+                if (!first) {
+                    sbuild.append(',');
+                }
+                first = false;
                 sbuild.append('\"').append(propId).append("\":");
                 if (!qualEntry.getValue().isEmpty()) {
                     boolean started = false;
@@ -189,6 +196,33 @@ public class Claim {
         sbuild.append(',');
         sbuild.append("\"rank\":\"").append((null != rank ? rank : Rank.NORMAL).toString()).append("\"");
 
+        sbuild.append(',');
+        if (0 < references.size()) {
+            sbuild.append("\"references\": [");
+            boolean first = true;
+            sbuild.append('{').append("\"snaks\":");
+            for (Set<Snak> ref : references) {
+                if (!first) {
+                    sbuild.append(',');
+                }
+                first = false;
+                sbuild.append('{');
+                boolean firstSnak = true;
+                for (Snak eachSnak : ref) {
+                    if (!firstSnak) {
+                        sbuild.append(',');
+                    }
+                    firstSnak = false;
+                    sbuild.append('\"').append(eachSnak.getProperty().getId()).append("\": ");
+                    sbuild.append('[');
+                    sbuild.append(eachSnak.toJSON());
+                    sbuild.append(']');
+                }
+                sbuild.append('}');
+            }
+            sbuild.append('}');
+            sbuild.append("]");
+        }
         sbuild.append('}');
         return sbuild.toString();
     }
