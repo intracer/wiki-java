@@ -217,6 +217,23 @@ public class WikibaseClaimFactory {
                                         BigInteger year = new BigInteger(yearSignum + yearStr);
                                         time.setYear(year.longValue());
                                     }
+                                } else if (time.getPrecision() == 10) {
+                                    Pattern yearMonthExtractor = Pattern.compile("(\\+|\\-)?(\\d+)\\-(\\d+).*");
+                                    Matcher yearMonthMatcher = yearMonthExtractor.matcher(iso8601time);
+                                    if (yearMonthMatcher.matches()) {
+                                        String yearStr = yearMonthMatcher.group(2);
+                                        String yearSignum = yearMonthMatcher.group(1);
+                                        String monthStr = yearMonthMatcher.group(3);
+                                        Calendar cal = GregorianCalendar.getInstance();
+                                        cal.set(Calendar.SECOND, 0);
+                                        cal.set(Calendar.MINUTE, 0);
+                                        cal.set(Calendar.HOUR, 0);
+                                        cal.set(Calendar.DAY_OF_MONTH, 0);
+                                        cal.set(Calendar.MONTH, Integer.parseInt(monthStr) - 1);
+                                        cal.set(Calendar.YEAR, Integer.parseInt(yearStr));
+                                        time.setCalendar(cal);
+                                    }
+                                    
                                 } else {
                                     Calendar cal = DatatypeConverter.parseDateTime(iso8601time.substring(1));
                                     if (iso8601time.startsWith("-")) {
