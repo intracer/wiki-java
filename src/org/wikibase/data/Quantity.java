@@ -64,5 +64,31 @@ public class Quantity extends WikibaseData {
         }
         return sb.toString();
     }
+    
+    
+    @Override
+    public String getDatatype() {
+        return "quantity";
+    }
 
+    @Override
+    public String valueToJSON() {
+        StringBuilder sbuild = new StringBuilder();
+        sbuild .append('{');
+        sbuild.append(String.format("\"amount\": \"%+f\",", amount));
+        sbuild.append(String.format("\"unit\": \"http://www.wikidata.org/entity/%s\",", unit.getEnt().getId()));
+        sbuild.append(String.format("\"upperBound\": \"%+f\",", upperBound));
+        sbuild.append(String.format("\"lowerBound\": \"%+f\"", lowerBound));
+        sbuild.append('}');
+        return sbuild.toString();
+    }
+
+    @Override
+    public String toJSON() {
+        StringBuilder sbuild = new StringBuilder("{");
+        sbuild.append("\"value\":").append(valueToJSON()).append(',');
+        sbuild.append("\"type\":\"quantity\"");
+        sbuild.append('}');
+        return sbuild.toString();
+    }
 }

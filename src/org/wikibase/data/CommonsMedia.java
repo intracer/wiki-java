@@ -50,7 +50,7 @@ public class CommonsMedia extends WikibaseData {
     @Override
     public String toJSON() {
         StringBuilder sbuild = new StringBuilder("{");
-        sbuild.append("\"value\":\"").append(fileName).append("\"");
+        sbuild.append("\"value\":").append(valueToJSON());
         sbuild.append(',');
         sbuild.append("\"type\":\"string\"");
         sbuild.append('}');
