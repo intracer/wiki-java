@@ -7634,7 +7634,7 @@ public class Wiki implements Serializable
      * @return the encoded text
      * @throws IOException if a network error occurs during initialization of the namespaces
      */
-    private String encode(String text, boolean normalize) throws IOException
+    protected String encode(String text, boolean normalize) throws IOException
     {
         final String encoding = "UTF-8";
         if (normalize)
